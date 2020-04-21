@@ -25,25 +25,61 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("hsqldb")
 public class DPPPTDataServiceTest {
 
+    private static final String APP_SOURCE = "org.dpppt.demo";
     private DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     @Autowired
     private DPPPTDataService dppptDataService;
 
     @Test
-    public void testUpsertupsertExposee() {
-        Exposee expected = new Exposee();
-        expected.setKey("key");
+    public void testDataService() {
         DateTime now = DateTime.now();
-        expected.setOnset(fmt.print(now));
+        Exposee expected = createExposee(now,"key");
 
-        dppptDataService.upsertExposee(expected,"AppSource");
+        dppptDataService.upsertExposee(expected, APP_SOURCE);
 
         List<Exposee> sortedExposedForDay = dppptDataService.getSortedExposedForDay(now);
         assertFalse(sortedExposedForDay.isEmpty());
         Exposee actual = sortedExposedForDay.get(0);
+        assertExposee(expected, actual);
+
+        dppptDataService.upsertExposee(expected, APP_SOURCE);
+        dppptDataService.upsertExposee(expected, APP_SOURCE);
+
+        sortedExposedForDay = dppptDataService.getSortedExposedForDay(now);
+        assertEquals(1, sortedExposedForDay.size());
+        actual = sortedExposedForDay.get(0);
+        assertExposee(expected, actual);
+
+        Exposee expected2 = createExposee(now, "key2");
+
+        dppptDataService.upsertExposee(expected, APP_SOURCE);
+        dppptDataService.upsertExposee(expected2, APP_SOURCE);
+
+        sortedExposedForDay = dppptDataService.getSortedExposedForDay(now);
+        assertEquals(2, sortedExposedForDay.size());
+        actual = sortedExposedForDay.get(0);
+        assertExposee(expected2, actual);
+        sortedExposedForDay = dppptDataService.getSortedExposedForDay(now);
+        actual = sortedExposedForDay.get(0);
+        assertExposee(expected2, actual);
+
+        Integer maxExposedIdForDay = dppptDataService.getMaxExposedIdForDay(now);
+        assertEquals(2, maxExposedIdForDay);
+    }
+
+    private Exposee createExposee(DateTime now, String key) {
+        Exposee expected = new Exposee();
+        expected.setKey(key);
+        expected.setOnset(fmt.print(now));
+        return expected;
+    }
+
+    private void assertExposee(Exposee expected, Exposee actual) {
         assertEquals(expected.getKey(), actual.getKey());
         assertEquals(expected.getOnset(), actual.getOnset());
         assertNotNull(actual.getId());
     }
+
+
 }
