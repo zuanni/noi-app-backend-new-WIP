@@ -19,7 +19,7 @@ public class Exposee {
 
 	// TODO MAKE LOCAL DATE??
 	@NotNull
-	private String onset;
+	private long keyDate;
 
 	public String getKey() {
 		return key;
@@ -38,11 +38,11 @@ public class Exposee {
 		this.id = id;
 	}
 
-	public String getOnset() {
-		return onset;
+	public long getKeyDate() {
+		return keyDate;
 	}
 
-	public void setOnset(String onset) {
-		this.onset = onset;
+	public void setKeyDate(long keyDate) {
+		this.keyDate = keyDate;
 	}
 }

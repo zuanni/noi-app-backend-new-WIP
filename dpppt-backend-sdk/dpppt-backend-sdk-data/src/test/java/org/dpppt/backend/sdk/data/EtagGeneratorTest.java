@@ -1,22 +1,28 @@
 package org.dpppt.backend.sdk.data;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 class EtagGeneratorTest {
 
-    private EtagGeneratorInterface target;
+    private EtagGeneratorInterface etagGenerator = new EtagGenerator();
 
-    @BeforeEach
-    void setUp() {
-        target = new EtagGenerator();
-    }
-
-    // TODO ADD MORE TEST WHEN SECRET IS CONFIGURABLE
     @Test
-    void shouldReturnCorrectEtag() {
-        Assertions.assertThat(target.getEtag(1)).isEqualTo("6bd26b412635ad2a7bdbe07b9f2f6e8b");
+    void getEtag() throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/expected_etags_first_thousand_with_default_salt")))) {
+
+            Iterable<String> lines = () -> reader.lines().iterator();
+
+            int i = 0;
+
+            for (String line: lines) {
+                final String etag = etagGenerator.getEtag(i++, "");
+                Assert.assertEquals(line, etag);
+            }
+        }
     }
 }

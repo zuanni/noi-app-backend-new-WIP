@@ -23,7 +23,7 @@ import com.zaxxer.hikari.HikariDataSource;
 @Configuration
 @Profile("prod")
 public class WSProdConfig extends WSBaseConfig {
-
+	
 	@Value("${datasource.username}")
 	String dataSourceUser;
 

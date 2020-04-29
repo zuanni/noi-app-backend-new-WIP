@@ -11,9 +11,11 @@
 	<name>DP3T Backend SDK</name>
 
 	<properties>
-		<java-version>1.8</java-version>
+		<java-version>11</java-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring-boot-version>2.2.6.RELEASE</spring-boot-version>
+		<itCoverageAgent></itCoverageAgent>
+		<build-helper-maven-plugin.version>1.9.1</build-helper-maven-plugin.version>
 		<assertj-version>3.15.0</assertj-version>
 		<maven-surefire-plugin-version>2.22.2</maven-surefire-plugin-version>
 		<maven-failsafe-plugin-version>2.22.2</maven-failsafe-plugin-version>
@@ -23,13 +25,10 @@
 		<module>dpppt-backend-sdk-model</module>
 		<module>dpppt-backend-sdk-data</module>
 		<module>dpppt-backend-sdk-ws</module>
+		<module>dpppt-backend-sdk-report</module>
 	</modules>
 
 	<dependencies>
-		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-		</dependency>
 
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -77,6 +76,11 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>3.11.4</version>
+		</dependency>
 
 	</dependencies>
 
@@ -96,7 +100,7 @@
 		<repository>
 			<id>spring-snapshots</id>
 			<name>Spring Snapshots</name>
-			<url>http://repo.spring.io/snapshot</url>
+			<url>https://repo.spring.io/snapshot</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
@@ -137,6 +141,98 @@
 					<source>${java-version}</source>
 					<target>${java-version}</target>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.5</version>
+				<executions>
+					<!-- set arg line property for surefire -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<configuration>
+							<propertyName>surefireArgLine</propertyName>
+						</configuration>
+					</execution>
+					<!-- set arg line property for failsafe -->
+					<execution>
+						<id>prepare-agent-integration</id>
+						<goals>
+							<goal>prepare-agent-integration</goal>
+						</goals>
+						<configuration>
+							<propertyName>failsafeArgLine</propertyName>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19.1</version>
+				<configuration>
+					<forkCount>1</forkCount>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<version>2.18.1</version>
+				<executions>
+					<execution>
+						<id>integration-tests</id>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+						<configuration>
+							<argLine>${itCoverageAgent}</argLine>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.5</version>
+				<executions>
+					<!-- METHOD 1 -->
+					<!--<execution>-->
+					<!--<id>prepare-agent</id>-->
+					<!--<goals>-->
+					<!--<goal>prepare-agent</goal>-->
+					<!--</goals>-->
+					<!--</execution>-->
+					<!-- prepare agent for measuring unit tests -->
+
+					<!-- METHOD 2 -->
+					<execution>
+						<id>prepare-unit-tests</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<!--<configuration>-->
+						<!--<destFile>${sonar.jacoco.reportPath}</destFile>-->
+						<!--</configuration>-->
+					</execution>
+
+					<!-- prepare agent for measuring integration tests -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+						<phase>pre-integration-test</phase>
+						<configuration>
+							<!--<destFile>${sonar.jacoco.itReportPath}</destFile>-->
+							<propertyName>itCoverageAgent</propertyName>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -198,6 +294,11 @@
 					</configuration>
 				</plugin>
 				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>0.8.5</version>
+				</plugin>
+				<plugin>
 					<groupId>com.github.spotbugs</groupId>
 					<artifactId>spotbugs-maven-plugin</artifactId>
 					<version>4.0.0</version>
@@ -217,7 +318,7 @@
 		<repository>
 			<id>github</id>
 			<name>GitHub Packages</name>
-			<url>https://maven.pkg.github.com/noiapp/noiapp-backend</url>
+			<url>https://maven.pkg.github.com/DP-3T/dp3t-sdk-backend</url>
 		</repository>
 	</distributionManagement>
 </project>

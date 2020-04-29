@@ -7,18 +7,17 @@
 package org.dpppt.backend.sdk.model;
 
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 
 public class ExposeeRequest {
+
+	private Integer fake = 0;
 
 	@NotNull
 	private String key;
 
 	@NotNull
-	@Size(max = 10)
-	private String onset;
+	private long keyDate;
 
-	@NotNull
 	private ExposeeAuthData authData;
 
 	public String getKey() {
@@ -37,11 +36,19 @@ public class ExposeeRequest {
 		this.authData = authData;
 	}
 
-	public String getOnset() {
-		return onset;
+	public long getKeyDate() {
+		return keyDate;
 	}
 
-	public void setOnset(String onset) {
-		this.onset = onset;
+	public void setKeyDate(long keyDate) {
+		this.keyDate = keyDate;
+	}
+	
+	public Integer isFake() {
+		return fake;
+	}
+
+	public void setIsFake(Integer fake) {
+		this.fake = fake;
 	}
 }

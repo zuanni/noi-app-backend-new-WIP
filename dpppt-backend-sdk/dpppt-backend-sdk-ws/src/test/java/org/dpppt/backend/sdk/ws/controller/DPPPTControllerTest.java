@@ -1,4 +1,26 @@
+/*
+ * Created by Ubique Innovation AG
+ * https://www.ubique.ch
+ * Copyright (c) 2020. All rights reserved.
+ */
+
 package org.dpppt.backend.sdk.ws.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Base64;
+import java.util.Collections;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.dpppt.backend.sdk.data.DPPPTDataService;
@@ -6,87 +28,193 @@ import org.dpppt.backend.sdk.model.ExposedOverview;
 import org.dpppt.backend.sdk.model.Exposee;
 import org.dpppt.backend.sdk.model.ExposeeAuthData;
 import org.dpppt.backend.sdk.model.ExposeeRequest;
-import org.dpppt.backend.sdk.ws.Application;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.Collections;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+@SpringBootTest(properties =
+{
+    "ws.app.jwt.publickey=classpath://generated_pub.pem"
+ })
+public class DPPPTControllerTest extends BaseControllerTest {
 
-@ActiveProfiles("dev")
-@SpringBootTest(classes = Application.class)
-@AutoConfigureMockMvc
-public class DPPPTControllerTest {
-
-    @Autowired private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
 
-    @MockBean private DPPPTDataService dataService;
+    @MockBean
+    private DPPPTDataService dataService;
 
-    @Captor private ArgumentCaptor<Exposee> exposeeCaptor;
+    @Captor
+    private ArgumentCaptor<Exposee> exposeeCaptor;
+
 
     @Test
-    void shouldSayHello() throws Exception {
-        mockMvc.perform(get("/v1")).andExpect(status().isOk())
-                .andExpect(content().string("Hello from DP3T WS"));
+    public void testHello() throws Exception {
+        MockHttpServletResponse response = mockMvc.perform(get("/v1"))
+                .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+
+        assertNotNull(response);
+        assertEquals("Hello from DP3T WS", response.getContentAsString());
     }
 
     @Test
-    void shouldAddExposed() throws Exception {
-        // given
-        ExposeeRequest request = getExposeeRequest();
+    public void testJWT() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(0);
+        String token = createToken(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5));
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                                                            .contentType(MediaType.APPLICATION_JSON)
+                                                            .header("Authorization", "Bearer " + token)
+                                                            .header("User-Agent", "MockMVC")
+                                                            .content(json(exposeeRequest)))
+                .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+        response = mockMvc.perform(post("/v1/exposed")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + jwtToken)
+                                .header("User-Agent", "MockMVC")
+                                .content(json(exposeeRequest)))
+                .andExpect(status().is4xxClientError()).andReturn().getResponse();
 
-        // when
-        mockMvc.perform(post("/v1/exposed")
-                .content(objectMapper.writeValueAsString(request))
-                .contentType("application/json")
-                .header("User-Agent", "user-agent")
-        ).andExpect(status().isOk())
-                .andExpect(content().string(""));
 
-        // then
-        verify(dataService, times(1)).upsertExposee(exposeeCaptor.capture(), anyString());
-
-        Exposee exposee = exposeeCaptor.getValue();
-        assertThat(exposee).isNotNull();
-        assertThat(exposee.getId()).isNull();
-        assertThat(exposee.getKey()).isEqualTo(request.getKey());
-        assertThat(exposee.getOnset()).isEqualTo(request.getOnset());
+    }
+    @Test
+    public void testJWTFake() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(1);
+        String token = createToken(true, OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5));
+        MockHttpServletResponse response  = mockMvc.perform(post("/v1/exposed")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + token)
+                                .header("User-Agent", "MockMVC")
+                                .content(json(exposeeRequest)))
+                .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+        response = mockMvc.perform(post("/v1/exposed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + jwtToken)
+                .header("User-Agent", "MockMVC")
+                .content(json(exposeeRequest)))
+        .andExpect(status().is4xxClientError()).andReturn().getResponse();
     }
 
     @Test
-    void shouldGetExposed() throws Exception {
-        // given
-        Exposee exposee = getExposee();
-        String date = "2020-12-30";
-        when(dataService.getMaxExposedIdForDay(any())).thenReturn(10);
-        when(dataService.getSortedExposedForDay(any()))
-                .thenReturn(Collections.singletonList(exposee));
+    public void cannotUseSameTokenTwice() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(0);
+        String token = createToken(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5));
 
-        // when
-        mockMvc.perform(get("/v1/exposed/" + date))
-                .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(
-                        new ExposedOverview(Collections.singletonList(exposee))))
-                );
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .header("User-Agent", "MockMVC")
+                    .content(json(exposeeRequest)))
+            .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+
+        response = mockMvc.perform(post("/v1/exposed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
+                .header("User-Agent", "MockMVC")
+                .content(json(exposeeRequest)))
+        .andExpect(status().is4xxClientError()).andReturn().getResponse();
+
+
     }
 
     @Test
+    public void canUseSameTokenTwiceIfFake() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(1);
+        String token = createToken(true, OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5));
+
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .header("User-Agent", "MockMVC")
+                    .content(json(exposeeRequest)))
+            .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+
+        response = mockMvc.perform(post("/v1/exposed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
+                .header("User-Agent", "MockMVC")
+                .content(json(exposeeRequest)))
+        .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
+
+
+    }
+
+    @Test
+    public void cannotUseExpiredToken() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(0);
+        String token = createToken(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusMinutes(5));
+
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + token)
+                .header("User-Agent", "MockMVC")
+                .content(json(exposeeRequest)))
+        .andExpect(status().is4xxClientError()).andReturn().getResponse();
+    }
+    @Test
+    public void cannotUseKeyDateInFuture() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().plusDays(2).withOffsetSameInstant(ZoneOffset.UTC).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(0);
+        String token = createToken(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5));
+
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .header("User-Agent", "MockMVC")
+                    .content(json(exposeeRequest)))
+            .andExpect(status().is4xxClientError()).andReturn().getResponse();
+    }
+    @Test
+    public void keyDateNotOlderThan21Days() throws Exception {
+        ExposeeRequest exposeeRequest = new ExposeeRequest();
+        exposeeRequest.setAuthData(new ExposeeAuthData());
+        exposeeRequest.setKeyDate(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).minusDays(22).toInstant().toEpochMilli());
+        exposeeRequest.setKey(Base64.getEncoder().encodeToString("test".getBytes("UTF-8")));
+        exposeeRequest.setIsFake(0);
+        String token = createToken(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.UTC).plusMinutes(5), "2020-01-01");
+
+        MockHttpServletResponse response = mockMvc.perform(post("/v1/exposed")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + token)
+                    .header("User-Agent", "MockMVC")
+                    .content(json(exposeeRequest)))
+            .andExpect(status().is4xxClientError()).andReturn().getResponse();
+    }
+
+
+    @org.junit.jupiter.api.Test
     void shouldReturnNotModifiedWithSameEtag() throws Exception {
 
         // given
@@ -129,7 +257,7 @@ public class DPPPTControllerTest {
     }
 
 
-    @Test
+    @org.junit.jupiter.api.Test
     void shouldReturnOKWithDifferentEtag() throws Exception {
 
         // given
@@ -193,6 +321,4 @@ public class DPPPTControllerTest {
         creationRequest.setAuthData(new ExposeeAuthData());
         return creationRequest;
     }
-
-
 }
