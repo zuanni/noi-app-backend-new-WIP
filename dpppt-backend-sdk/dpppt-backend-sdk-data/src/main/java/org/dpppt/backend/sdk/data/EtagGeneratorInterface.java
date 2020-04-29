@@ -12,7 +12,8 @@ public interface EtagGeneratorInterface {
      * Generates etag from primary key
      *
      * @param primaryKey the primary key
+     * @param contentType TODO
      * @return the etag
      */
-    String getEtag(int primaryKey);
+    String getEtag(int primaryKey, String contentType);
 }

@@ -142,39 +142,40 @@
 					<target>${java-version}</target>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.5</version>
-				<executions>
-					<!-- set arg line property for surefire -->
-					<execution>
-						<id>prepare-agent</id>
-						<goals>
-							<goal>prepare-agent</goal>
-						</goals>
-						<configuration>
-							<propertyName>surefireArgLine</propertyName>
-						</configuration>
-					</execution>
-					<!-- set arg line property for failsafe -->
-					<execution>
-						<id>prepare-agent-integration</id>
-						<goals>
-							<goal>prepare-agent-integration</goal>
-						</goals>
-						<configuration>
-							<propertyName>failsafeArgLine</propertyName>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.jacoco</groupId>-->
+<!--				<artifactId>jacoco-maven-plugin</artifactId>-->
+<!--				<version>0.8.5</version>-->
+<!--				<executions>-->
+<!--					&lt;!&ndash; set arg line property for surefire &ndash;&gt;-->
+<!--					<execution>-->
+<!--						<id>prepare-agent</id>-->
+<!--						<goals>-->
+<!--							<goal>prepare-agent</goal>-->
+<!--						</goals>-->
+<!--						<configuration>-->
+<!--							<propertyName>surefireArgLine</propertyName>-->
+<!--						</configuration>-->
+<!--					</execution>-->
+<!--					&lt;!&ndash; set arg line property for failsafe &ndash;&gt;-->
+<!--					<execution>-->
+<!--						<id>prepare-agent-integration</id>-->
+<!--						<goals>-->
+<!--							<goal>prepare-agent-integration</goal>-->
+<!--						</goals>-->
+<!--						<configuration>-->
+<!--							<propertyName>failsafeArgLine</propertyName>-->
+<!--						</configuration>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.19.1</version>
 				<configuration>
 					<forkCount>1</forkCount>
+					<argLine>-Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 				</configuration>
 			</plugin>
 
@@ -269,14 +270,14 @@
 				<configuration>
 					<spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
 				</configuration>
-				<executions>
-					<execution>
-						<phase>test</phase>
-						<goals>
-							<goal>check</goal>
-						</goals>
-					</execution>
-				</executions>
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<phase>test</phase>-->
+<!--						<goals>-->
+<!--							<goal>check</goal>-->
+<!--						</goals>-->
+<!--					</execution>-->
+<!--				</executions>-->
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -318,7 +319,7 @@
 		<repository>
 			<id>github</id>
 			<name>GitHub Packages</name>
-			<url>https://maven.pkg.github.com/DP-3T/dp3t-sdk-backend</url>
+			<url>https://maven.pkg.github.com/noiapp/noi-app-backend-new-WIP.git</url>
 		</repository>
 	</distributionManagement>
 </project>

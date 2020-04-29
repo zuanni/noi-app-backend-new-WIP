@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
@@ -45,10 +46,12 @@ import org.springframework.test.web.servlet.MvcResult;
 {
     "ws.app.jwt.publickey=classpath://generated_pub.pem"
  })
+@AutoConfigureMockMvc
 public class DPPPTControllerTest extends BaseControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
     @Autowired private ObjectMapper objectMapper;
 
     @MockBean
@@ -214,8 +217,8 @@ public class DPPPTControllerTest extends BaseControllerTest {
     }
 
 
-    @org.junit.jupiter.api.Test
-    void shouldReturnNotModifiedWithSameEtag() throws Exception {
+    @Test
+    public void shouldReturnNotModifiedWithSameEtag() throws Exception {
 
         // given
         Exposee exposee = getExposee();
@@ -224,7 +227,7 @@ public class DPPPTControllerTest extends BaseControllerTest {
         when(dataService.getSortedExposedForDay(any()))
                 .thenReturn(Collections.singletonList(exposee));
 
-        ExposeeRequest creationRequest = getExposeeRequest();
+        ExposeeRequest creationRequest = getExposeeRequest(exposee);
 
         // Create an exposee
         mockMvc.perform(post("/v1/exposed")
@@ -257,8 +260,8 @@ public class DPPPTControllerTest extends BaseControllerTest {
     }
 
 
-    @org.junit.jupiter.api.Test
-    void shouldReturnOKWithDifferentEtag() throws Exception {
+    @Test
+    public void shouldReturnOKWithDifferentEtag() throws Exception {
 
         // given
         Exposee exposee = getExposee();
@@ -267,7 +270,7 @@ public class DPPPTControllerTest extends BaseControllerTest {
         when(dataService.getSortedExposedForDay(any()))
                 .thenReturn(Collections.singletonList(exposee));
 
-        ExposeeRequest creationRequest = getExposeeRequest();
+        ExposeeRequest creationRequest = getExposeeRequest(exposee);
 
         // Create an exposee
         mockMvc.perform(post("/v1/exposed")
@@ -306,19 +309,19 @@ public class DPPPTControllerTest extends BaseControllerTest {
 
     }
 
+    private ExposeeRequest getExposeeRequest(Exposee exposee) {
+        ExposeeRequest creationRequest = new ExposeeRequest();
+        creationRequest.setKey(exposee.getKey());
+        creationRequest.setKeyDate(exposee.getKeyDate());
+        creationRequest.setAuthData(new ExposeeAuthData());
+        return creationRequest;
+    }
+
     private Exposee getExposee() {
         Exposee exposee = new Exposee();
         exposee.setId(1);
         exposee.setKey("key");
-        exposee.setOnset("onset");
+        exposee.setKeyDate(111);
         return exposee;
-    }
-
-    private ExposeeRequest getExposeeRequest() {
-        ExposeeRequest creationRequest = new ExposeeRequest();
-        creationRequest.setKey("key");
-        creationRequest.setOnset("onset");
-        creationRequest.setAuthData(new ExposeeAuthData());
-        return creationRequest;
     }
 }
