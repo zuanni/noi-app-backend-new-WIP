@@ -17,12 +17,14 @@ import java.util.Base64;
 import org.dpppt.backend.sdk.model.ExposeeAuthData;
 import org.dpppt.backend.sdk.model.ExposeeRequest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 public class DPPPTControllerNoSecurityTest extends BaseControllerNoSecurityTest {
     @Test
+    @Ignore
     public void testJWT() throws Exception {
         ExposeeRequest exposeeRequest = new ExposeeRequest();
         exposeeRequest.setAuthData(new ExposeeAuthData());
@@ -36,6 +38,7 @@ public class DPPPTControllerNoSecurityTest extends BaseControllerNoSecurityTest 
                 .andExpect(status().is2xxSuccessful()).andReturn().getResponse();
     }
     @Test
+    @Ignore
     public void testJWTFake() throws Exception {
         ExposeeRequest exposeeRequest = new ExposeeRequest();
         exposeeRequest.setAuthData(new ExposeeAuthData());
